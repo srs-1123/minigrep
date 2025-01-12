@@ -1,29 +1,31 @@
+extern crate minigrep;
+
 use std::env;
-use std::fs::File;
-use std::io::prelude::*;
+use std::process;
+
+use minigrep::Config;
 
 fn main() {
     // collect: 引数をベクタに変換
     let args: Vec<String> = env::args().collect();
 
     // プログラム名がベクタの最初の値、args[0]を占めている
-    let query = &args[1];
-    let filename = &args[2];
+    // unwrap_or_else: Errの中身をerr引数のクロージャに渡している
+    // env::args(): イテレータを返す
+    let config = Config::new(env::args()).unwrap_or_else(|err| {
+        // 引数解析に問題
+        eprintln!("Problem parsing arguments: {}", err); // 標準エラー出力に出力
+        process::exit(1);
+    });
 
     // {}を探しています
-    println!("Searching for {}", query);
+    println!("Searching for {}", config.query);
     // {}というファイルの中
-    println!("In file {}", filename);
+    println!("In file {}", config.filename);
 
-    // ファイルを開く
-    // expect: 例外処理
-    let mut f = File::open(filename).expect("file not found");
+    if let Err(e) = minigrep::run(config) {
+        eprintln!("Application error: {}", e);
+        process::exit(1);
+    }
 
-    let mut contents = String::new();
-    f.read_to_string(&mut contents)
-        // ファイルの読み込み中に問題がありました
-        .expect("something went wrong reading the file");
-    
-    // テキストは/n{}です
-    println!("with text:/n{}", contents);
 }
